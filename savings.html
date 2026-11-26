@@ -1,0 +1,10 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>คำนวณดอกเบี้ยทบต้น ออมเงินรายเดือน | เครื่องมือเงินไทย</title><meta name="description" content="คำนวณเงินออมสะสมจากดอกเบี้ยทบต้น">
+<link rel="stylesheet" href="style.css"><script src="config.js"></script><script src="calc.js"></script>
+<script>if(CONFIG.adsenseClient){var s=document.createElement('script');s.async=1;s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+CONFIG.adsenseClient;document.head.appendChild(s)}</script></head>
+<body><header><a href="index.html">💰 เครื่องมือเงินไทย</a></header><main>
+<h1>คำนวณดอกเบี้ยทบต้น / ออมรายเดือน</h1><div class="card"><label>เงินต้น (บาท)</label><input id="p" type="number" value="0"><label>ออมเพิ่มต่อเดือน (บาท)</label><input id="m" type="number" value="5000"><label>ผลตอบแทนต่อปี (%)</label><input id="i" type="number" value="4" step="0.1"><label>ระยะเวลา (ปี)</label><input id="y" type="number" value="20"><button id="b">คำนวณ</button><div class="res" id="r"></div></div>
+<p class="mut">ผลลัพธ์เป็นการประมาณเพื่อประกอบการวางแผน ไม่ใช่คำปรึกษาทางภาษี/การเงิน</p></main>
+<footer class="mut">© เครื่องมือเงินไทย · <a href="privacy.html">นโยบายความเป็นส่วนตัว</a></footer>
+<script>const f=n=>n.toLocaleString("th-TH",{maximumFractionDigits:2});
+b.onclick=()=>{const c=Calc.compound(+p.value,+m.value,+i.value,+y.value);r.innerHTML='เงินสะสมรวม <b>'+f(c.balance)+'</b><br>เงินที่ลงทุนไป <b>'+f(c.invested)+'</b><br>ผลตอบแทน <b>'+f(c.gain)+'</b> บาท';};b.click();</script></body></html>
