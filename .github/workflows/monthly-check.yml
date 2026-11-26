@@ -1,0 +1,18 @@
+name: monthly-check
+on:
+  schedule: [{ cron: "17 3 1 * *" }]   # วันที่ 1 ของทุกเดือน
+  push: { branches: [main] }
+  workflow_dispatch:
+permissions: { contents: read, issues: write }
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node check.js
+      - name: Remind to verify legal rates
+        if: github.event_name == 'schedule'
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh issue create --title "ตรวจอัตราภาษี/ประกันสังคมประจำเดือน $(date +%Y-%m)" \
+            --body "เทียบค่าใน config.js กับ rd.go.th และ sso.go.th แล้วแก้ถ้าเปลี่ยน (ดู config.js: verified)"
