@@ -9,6 +9,6 @@ for f in glob.glob('*.html'):
     t=re.search(r'<title>(.*?)</title>',h).group(1); d=(re.search(r'name="description" content="(.*?)"',h) or [0,''])[1]
     u=D+'/'+('' if f=='index.html' else f)
     ld='{"@context":"https://schema.org","@type":"WebPage","name":"%s","url":"%s","inLanguage":"th"}'%(t.replace('"',''),u)
-    blk=f'<!--seo--><link rel="canonical" href="{u}"><link rel="icon" href="favicon.svg" type="image/svg+xml"><meta property="og:title" content="{t}"><meta property="og:description" content="{d}"><meta property="og:url" content="{u}"><meta property="og:locale" content="th_TH"><meta name="theme-color" content="#0b6b53"><script type="application/ld+json">{ld}</script><!--/seo-->'
+    blk=f'<!--seo--><link rel="canonical" href="{u}"><link rel="icon" href="favicon.svg" type="image/svg+xml"><meta property="og:title" content="{t}"><meta property="og:description" content="{d}"><meta property="og:url" content="{u}"><meta property="og:locale" content="th_TH"><meta name="theme-color" content="#0b6b53"><meta name="google-site-verification" content="Or4ukEcD3GRHU0DjK7WAPo3XGqUdAftq1skqdrDpXdw"><script type="application/ld+json">{ld}</script><!--/seo-->'
     h=h.replace('</head>',blk+'</head>',1)
     open(f,'w',encoding='utf-8').write(h)
