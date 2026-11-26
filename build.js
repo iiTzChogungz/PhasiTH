@@ -8,6 +8,8 @@ const SITE = (process.argv[2] || process.env.SITE_URL || "https://phasith.vercel
 const NAME = "เครื่องมือเงินไทย", TODAY = new Date().toISOString().slice(0, 10);
 const FONTS = "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Pridi:wght@600;700&display=swap";
 const SAL = [15000, 20000, 25000, 30000, 35000, 40000, 50000, 60000, 70000, 80000, 100000, 150000];
+const crypto = require("crypto");
+const VER = crypto.createHash("md5").update(["style.css","app.js","tools.js","calc.js","config.js"].map((x) => fs.readFileSync(x)).join("")).digest("hex").slice(0, 8);
 const pages = []; // {file, path}
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 const ld = (o) => `<script type="application/ld+json">${JSON.stringify(o)}</script>`;
@@ -23,12 +25,12 @@ function shell({ file, p, title, desc, body, jsonld = [], scripts = false, bare 
 <link rel="canonical" href="${SITE + p}"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta name="theme-color" content="#E9EEEB">
 <meta property="og:type" content="website"><meta property="og:locale" content="th_TH"><meta property="og:site_name" content="${NAME}"><meta property="og:title" content="${esc(full)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${SITE + p}">
 <meta name="google-site-verification" content="Or4ukEcD3GRHU0DjK7WAPo3XGqUdAftq1skqdrDpXdw">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${FONTS}"><link rel="stylesheet" href="/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${FONTS}"><link rel="stylesheet" href="/style.css?v=${VER}">
 ${jsonld.join("")}</head><body>
 <header class="top"><div class="wrap"><a class="mark" href="/"><b aria-hidden="true">฿</b>${NAME}</a><nav aria-label="เมนูหลัก"><a href="/#tools">เครื่องมือ</a><a href="/#guides">บทความ</a><a href="/about">เกี่ยวกับ</a></nav></div></header>
 <main>${body}</main>
 <footer class="foot"><div class="wrap"><span>${NAME} · ใช้ฟรี คำนวณในเบราว์เซอร์ของคุณ ไม่เก็บข้อมูลที่กรอก</span><span><a href="/about">เกี่ยวกับ</a> · <a href="/privacy">นโยบายความเป็นส่วนตัว</a></span></div></footer>
-${scripts ? '<script src="/config.js"></script><script src="/calc.js"></script><script src="/tools.js"></script><script src="/app.js"></script>' : ""}
+${scripts ? '<script src="/config.js?v=${VER}"></script><script src="/calc.js?v=${VER}"></script><script src="/tools.js?v=${VER}"></script><script src="/app.js?v=${VER}"></script>' : ""}
 </body></html>`;
   fs.writeFileSync(path.join(__dirname, file), html);
   if (!noindex) pages.push({ p });
@@ -127,7 +129,7 @@ shell({ file: "index.html", p: "/", title: `${NAME} | คำนวณภาษ�
 // ---------- static pages
 shell({ file: "about.html", p: "/about", title: "เกี่ยวกับเว็บไซต์", desc: `เกี่ยวกับ${NAME}`, body: `${crumb("เกี่ยวกับ")}<div class="wrap"><div class="prose"><h1>เกี่ยวกับเว็บไซต์</h1><p>${NAME}เป็นชุดเครื่องมือคำนวณการเงินส่วนบุคคลฟรี คำนวณทั้งหมดในเบราว์เซอร์ของคุณ ไม่ส่งข้อมูลที่กรอกไปที่ใด</p><p>ค่าตามกฎหมาย เช่น อัตราภาษีและเพดานประกันสังคม อยู่ในไฟล์เดียว และมีการตรวจทานทุกเดือน ผลลัพธ์เป็นการประมาณเพื่อประกอบการวางแผนเท่านั้น ไม่ใช่คำปรึกษาด้านภาษี กฎหมาย หรือการลงทุน หากพบตัวเลขไม่ตรงกับประกาศทางการ โปรดแจ้งผ่านหน้า GitHub ของโครงการ</p></div></div>` });
 shell({ file: "privacy.html", p: "/privacy", title: "นโยบายความเป็นส่วนตัว", desc: "นโยบายความเป็นส่วนตัวของเว็บไซต์", body: `${crumb("นโยบายความเป็นส่วนตัว")}<div class="wrap"><div class="prose"><h1>นโยบายความเป็นส่วนตัว</h1><p>เว็บนี้คำนวณในเบราว์เซอร์ของคุณ ข้อมูลที่กรอกไม่ถูกส่งไปเก็บที่เซิร์ฟเวอร์ ผู้ให้บริการโฮสติ้งอาจเก็บบันทึกการเข้าชมตามปกติ เช่น ที่อยู่ IP และหน้าที่เปิด เพื่อความปลอดภัยและสถิติการใช้งาน</p></div></div>` });
-fs.writeFileSync("404.html", `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ไม่พบหน้า | ${NAME}</title><meta name="robots" content="noindex"><link rel="stylesheet" href="${FONTS}"><link rel="stylesheet" href="/style.css"></head><body><main class="wrap" style="padding-block:64px"><h1>ไม่พบหน้าที่ต้องการ</h1><p class="lede"><a href="/">กลับหน้าแรกเพื่อเลือกเครื่องมือ</a></p></main></body></html>`);
+fs.writeFileSync("404.html", `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ไม่พบหน้า | ${NAME}</title><meta name="robots" content="noindex"><link rel="stylesheet" href="${FONTS}"><link rel="stylesheet" href="/style.css?v=${VER}"></head><body><main class="wrap" style="padding-block:64px"><h1>ไม่พบหน้าที่ต้องการ</h1><p class="lede"><a href="/">กลับหน้าแรกเพื่อเลือกเครื่องมือ</a></p></main></body></html>`);
 
 // ---------- sitemap + robots
 fs.writeFileSync("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map((x) => `<url><loc>${SITE + (x.p === "/" ? "/" : x.p)}</loc><lastmod>${TODAY}</lastmod></url>`).join("\n")}\n</urlset>\n`);
