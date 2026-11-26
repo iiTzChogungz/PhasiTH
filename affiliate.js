@@ -1,4 +1,0 @@
-(function(){var C=window.CONFIG||{},p=location.pathname.split("/").pop()||"index.html",el=document.getElementById("aff");if(!el)return;
-if(p==="")p="index.html";var h="";(C.affiliates||[]).forEach(function(a){if(!a.url)return;if(a.pages&&a.pages.length&&a.pages.indexOf(p)<0&&a.pages.indexOf(p+".html")<0)return;
-h+='<div class="card"><b>'+a.title+'</b><br><span class="mut">'+a.desc+'</span><br><a href="'+a.url+'" rel="sponsored nofollow noopener" target="_blank">ดูรายละเอียด →</a></div>'});
-if(h)el.innerHTML=h+'<p class="mut">หมายเหตุ: ลิงก์ด้านบนเป็นลิงก์พันธมิตร (affiliate) เราอาจได้ค่าคอมมิชชันโดยคุณไม่เสียค่าใช้จ่ายเพิ่ม</p>';})();

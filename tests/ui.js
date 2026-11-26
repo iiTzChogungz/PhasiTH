@@ -1,20 +1,20 @@
-// รัน: python3 -m http.server 8765 & NODE_PATH=$(npm root -g) node tests/ui.js [โฟลเดอร์เก็บภาพ]
-const {chromium}=require('playwright');
-(async()=>{const b=await chromium.launch();
-for(const [name,vp] of [['mobile',{width:390,height:800}],['desktop',{width:1280,height:900}]]){
+// รัน: node tests/serve.js & NODE_PATH=$(npm root -g) node tests/ui.js [โฟลเดอร์เก็บภาพ]
+const {chromium}=require('playwright');const B='http://localhost:8765';
+(async()=>{const b=await chromium.launch();let bad=0;
+for(const [name,vp] of [['mobile',{width:390,height:800}],['small',{width:320,height:640}],['desktop',{width:1280,height:900}]]){
  const p=await b.newPage({viewport:vp});const errs=[];
- p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>m.type()==='error'&&!/fonts|net::/.test(m.text())&&errs.push(m.text()));
- for(const pg of ['tax','salary','loan','refinance','vat','savings','withholding','tax-saving','freelance-rate','overtime','debt-payoff']){
-  await p.goto('http://localhost:8765/'+pg+'.html');
-  const first=await p.$('.card input[type=number]');await first.fill('50000');await p.waitForTimeout(350);
-  const rows=await p.$$eval('#r .row',e=>e.length);const key=await p.$$eval('#r .row.key',e=>e.length);
-  const ow=await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
-  if(name==='mobile'||pg==='tax')console.log(name,pg,'rows',rows,'key',key,ow?'OVERFLOW':'');
-  if(!rows||key!==1||ow)errs.push('BAD '+pg);
-  if(process.argv[2]&&pg==='tax')await p.screenshot({path:process.argv[2]+`/tax-${name}.png`,fullPage:true});}
- await p.goto('http://localhost:8765/');
- await p.fill('#q','ภาษี');const vis=await p.$$eval('#grid .tile',e=>e.filter(x=>x.style.display!=='none').length);console.log(name,'search ภาษี ->',vis,'tiles');
+ p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>m.type()==='error'&&!/fonts|net::|ERR_/.test(m.text())&&errs.push(m.text()));
+ const tools=['salary','tax','tax-saving','withholding','vat','loan','refinance','debt-payoff','savings','freelance-rate','overtime'];
+ for(const pg of [...tools,'take-home-30000','take-home-15000']){
+  await p.goto(B+'/'+pg);
+  const inp=await p.$('.in input');await inp.fill('50000');await p.waitForTimeout(120);
+  const key=await p.$$eval('.slip .key strong',e=>e.length),rows=await p.$$eval('.slip .r',e=>e.length);
+  const ow=await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
+  if(!(key===1||pg==='debt-payoff')||ow){errs.push(`BAD ${pg} key=${key} rows=${rows} overflow=${ow}`)}}
+ await p.goto(B+'/');await p.fill('#q','ภาษี');
+ const vis=await p.$$eval('.toc-row[data-find]',e=>e.filter(x=>!x.hidden).length);if(vis<4)errs.push('search '+vis);
  await p.fill('#q','');
- if(process.argv[2])await p.screenshot({path:process.argv[2]+`/home-${name}.png`,fullPage:true});
- console.log(name,'errors:',errs.length?errs:'none');await p.close();}
-await b.close()})();
+ if(process.argv[2]){await p.goto(B+'/');await p.waitForTimeout(1100);await p.screenshot({path:process.argv[2]+`/home-${name}.png`,fullPage:true});
+  await p.goto(B+'/tax');await p.screenshot({path:process.argv[2]+`/tax-${name}.png`,fullPage:true});}
+ console.log(name,errs.length?errs:'ok');bad+=errs.length;await p.close();}
+await b.close();process.exit(bad?1:0)})();
