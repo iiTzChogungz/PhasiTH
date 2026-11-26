@@ -5,7 +5,8 @@ global.window = global;
 require("./config.js"); const Calc = require("./calc.js"); const { TOOLS, GROUPS, fmt: f, slipHTML } = require("./tools.js");
 const CONTENT = require("./content.js"), GUIDES = require("./content/guides.json");
 const SITE = (process.argv[2] || process.env.SITE_URL || "https://phasith.vercel.app").replace(/\/$/, "");
-const NAME = "เครื่องมือเงินไทย", TODAY = new Date().toISOString().slice(0, 10);
+const CREATOR = require("./content/creator.json"), SPONSORS = require("./content/sponsors.json");
+const NAME = CONFIG.brand.name, TODAY = new Date().toISOString().slice(0, 10);
 const FONTS = "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Pridi:wght@600;700&display=swap";
 const SAL = [15000, 20000, 25000, 30000, 35000, 40000, 50000, 60000, 70000, 80000, 100000, 150000];
 const crypto = require("crypto");
@@ -29,7 +30,7 @@ function shell({ file, p, title, desc, body, jsonld = [], scripts = false, bare 
 ${jsonld.join("")}</head><body>
 <header class="top"><div class="wrap"><a class="mark" href="/"><b aria-hidden="true">฿</b>${NAME}</a><nav aria-label="เมนูหลัก"><a href="/#tools">เครื่องมือ</a><a href="/#guides">บทความ</a><a href="/about">เกี่ยวกับ</a></nav></div></header>
 <main>${body}</main>
-<footer class="foot"><div class="wrap"><span>${NAME} · ใช้ฟรี คำนวณในเบราว์เซอร์ของคุณ ไม่เก็บข้อมูลที่กรอก</span><span><a href="/about">เกี่ยวกับ</a> · <a href="/privacy">นโยบายความเป็นส่วนตัว</a></span></div></footer>
+<footer class="foot"><div class="wrap"><span>${NAME} · ใช้ฟรี คำนวณในเบราว์เซอร์ของคุณ ไม่เก็บข้อมูลที่กรอก</span><span>สร้างโดย <a href="/about" rel="author">${CREATOR.handle}</a> · <a href="/advertise">ลงโฆษณา</a> · <a href="/privacy">ความเป็นส่วนตัว</a></span></div></footer>
 ${scripts ? '<script src="/config.js?v=${VER}"></script><script src="/calc.js?v=${VER}"></script><script src="/tools.js?v=${VER}"></script><script src="/app.js?v=${VER}"></script>' : ""}
 </body></html>`;
   fs.writeFileSync(path.join(__dirname, file), html);
@@ -44,10 +45,11 @@ function fieldHTML(fl) {
 function bench(t, vals) {
   const form = `<form class="blank" data-tool="${t.id}" aria-label="กรอกข้อมูล">${t.fields.map((x) => fieldHTML(vals ? { ...x, value: vals[x.id] ?? x.value } : x)).join("")}</form>`;
   const v = vals ? { ...defaults(t), ...vals } : defaults(t);
-  const slip = `<div class="slipwrap"><section class="slip" data-slip="${t.id}" aria-live="polite" aria-label="ผลลัพธ์"><div class="slip-head"><span>สรุปผล</span><span>${NAME}</span></div><div class="slip-body">${slipHTML(t, t.compute(v))}</div><div class="slip-foot"><span>ประมาณการ ไม่ใช่คำปรึกษา</span><button type="button" class="copy">คัดลอกผล</button></div></section></div>`;
+  const slip = `<div class="slipwrap"><section class="slip" data-slip="${t.id}" aria-live="polite" aria-label="ผลลัพธ์"><div class="slip-head"><span>สรุปผล</span><span>${NAME}</span></div><div class="slip-body">${slipHTML(t, t.compute(v))}</div><div class="slip-foot"><span>ประมาณการ ไม่ใช่คำปรึกษา</span><span class="acts"><button type="button" class="copy">คัดลอกผล</button><button type="button" class="save">บันทึกเป็นภาพ</button></span></div></section></div>`;
   return { form, slip };
 }
 const crumb = (cur) => `<nav class="crumb wrap" aria-label="เส้นทาง"><a href="/">หน้าแรก</a> › ${cur}</nav>`;
+const sponsor = (id) => SPONSORS.filter((s) => !s.tools || s.tools.includes(id) || s.tools.includes("all")).slice(0, 1).map((s) => `<aside class="spons" aria-label="สปอนเซอร์"><small>สนับสนุนโดย</small><a href="${esc(s.url)}" rel="sponsored noopener" target="_blank"><b>${esc(s.title)}</b><span>${esc(s.text)}</span></a></aside>`).join("");
 const H1 = (t) => t.split(" ").map((x) => `<span class="nb">${x}</span>`).join(" ");
 const link = (id) => { const t = TOOLS.find((x) => x.id === id); return `<li><a href="/${id}">${t.name}</a></li>`; };
 
@@ -62,7 +64,7 @@ for (const t of TOOLS) {
   }
   const g = Object.entries(GUIDES).find(([, v]) => v.tool === t.id);
   const body = `${crumb(t.name)}<div class="wrap bench"><div><h1>${H1(t.h1)}</h1><p class="lede">${t.lede}</p><div style="margin-top:30px">${form}</div></div>${slip}</div>
-<div class="wrap"><div class="prose">${explain}<h2>คำถามที่พบบ่อย</h2>${c.faq.map(([q, a]) => `<h3>${q}</h3><p>${a}</p>`).join("")}</div>
+<div class="wrap">${sponsor(t.id)}<div class="prose">${explain}<h2>คำถามที่พบบ่อย</h2>${c.faq.map(([q, a]) => `<h3>${q}</h3><p>${a}</p>`).join("")}</div>
 <div class="next"><h2 style="margin-top:0;font-size:1.15rem">ลองต่อ</h2><ul>${t.next.map(link).join("")}${g ? `<li><a href="/${g[0]}">บทความ: ${g[1].title}</a></li>` : ""}</ul></div>
 <p class="disc">ผลลัพธ์เป็นการประมาณเพื่อประกอบการวางแผน ไม่ใช่คำปรึกษาด้านภาษีหรือการเงิน</p></div>`;
   shell({ file: `${t.id}.html`, p: `/${t.id}`, title: t.title, desc: t.desc, body, scripts: true,
@@ -73,7 +75,7 @@ for (const t of TOOLS) {
 // ---------- guides
 for (const [slug, gd] of Object.entries(GUIDES)) {
   const tool = TOOLS.find((x) => x.id === gd.tool);
-  const body = `${crumb(gd.title)}<div class="wrap"><article class="prose" style="padding-top:12px">${gd.html}${tool ? `<p style="margin-top:28px"><a href="/${tool.id}"><b>ลองคำนวณ: ${tool.name}</b></a></p>` : ""}</article>
+  const body = `${crumb(gd.title)}<div class="wrap">${tool ? sponsor(tool.id) : ""}<article class="prose" style="padding-top:12px">${gd.html}${tool ? `<p style="margin-top:28px"><a href="/${tool.id}"><b>ลองคำนวณ: ${tool.name}</b></a></p>` : ""}</article>
 <div class="next"><h2 style="margin-top:0;font-size:1.15rem">ลองต่อ</h2><ul>${(tool ? tool.next : []).map(link).join("")}</ul></div></div>`;
   shell({ file: `${slug}.html`, p: `/${slug}`, title: gd.title, desc: gd.desc, body,
     jsonld: [ld({ "@context": "https://schema.org", "@type": "Article", headline: gd.title, description: gd.desc, inLanguage: "th", dateModified: TODAY, author: { "@type": "Organization", name: NAME }, mainEntityOfPage: `${SITE}/${slug}` }), crumbLD([["หน้าแรก", "/"], [gd.title, "/" + slug]])] });
@@ -127,7 +129,26 @@ shell({ file: "index.html", p: "/", title: `${NAME} | คำนวณภาษ�
   jsonld: [ld({ "@context": "https://schema.org", "@type": "WebSite", name: NAME, url: SITE + "/", inLanguage: "th" })] });
 
 // ---------- static pages
-shell({ file: "about.html", p: "/about", title: "เกี่ยวกับเว็บไซต์", desc: `เกี่ยวกับ${NAME}`, body: `${crumb("เกี่ยวกับ")}<div class="wrap"><div class="prose"><h1>เกี่ยวกับเว็บไซต์</h1><p>${NAME}เป็นชุดเครื่องมือคำนวณการเงินส่วนบุคคลฟรี คำนวณทั้งหมดในเบราว์เซอร์ของคุณ ไม่ส่งข้อมูลที่กรอกไปที่ใด</p><p>ค่าตามกฎหมาย เช่น อัตราภาษีและเพดานประกันสังคม อยู่ในไฟล์เดียว และมีการตรวจทานทุกเดือน ผลลัพธ์เป็นการประมาณเพื่อประกอบการวางแผนเท่านั้น ไม่ใช่คำปรึกษาด้านภาษี กฎหมาย หรือการลงทุน หากพบตัวเลขไม่ตรงกับประกาศทางการ โปรดแจ้งผ่านหน้า GitHub ของโครงการ</p></div></div>` });
+const ig = `https://www.instagram.com/${CREATOR.ig}/`, yt = `https://www.youtube.com/@${CREATOR.yt}`;
+const crow = (n, d, href) => `<${href ? `a href="${href}" rel="noopener" target="_blank"` : "div"} class="toc-row"><span class="n">${n}</span><span class="lead" aria-hidden="true"></span><span class="d">${d}</span></${href ? "a" : "div"}>`;
+shell({ file: "about.html", p: "/about", title: `ผู้สร้างและช่องทางติดต่อ`, desc: `${NAME} สร้างโดย ${CREATOR.handle} ${CREATOR.roles.join(" · ")} ติดต่อได้ทาง Instagram YouTube และอีเมล`,
+  body: `${crumb("ผู้สร้าง")}<div class="wrap"><div class="prose" style="max-width:none"><div class="who"><p class="mut" style="margin:0">สร้างโดย</p><h1>${CREATOR.handle}</h1><ul class="chips roles">${CREATOR.roles.map((r) => `<li><span>${r}</span></li>`).join("")}</ul></div></div>
+<div class="prose"><p>${CREATOR.bio}</p>
+<h2>ติดต่อ</h2></div>
+<div class="contact">${crow("Instagram", "@" + CREATOR.ig, ig)}${crow("YouTube", CREATOR.yt, yt)}${crow("อีเมล", `<span id="mail">${CREATOR.email}</span> <button type="button" class="copy mini" data-copy="${CREATOR.email}">คัดลอก</button>`)}</div>
+<div class="prose"><h2>ภาษีTH คืออะไร</h2><p>ชุดเครื่องมือคำนวณการเงินส่วนบุคคลฟรี คำนวณทั้งหมดในเบราว์เซอร์ของคุณ ไม่ส่งข้อมูลที่กรอกไปที่ใด ค่าตามกฎหมาย เช่น อัตราภาษีและเพดานประกันสังคม อยู่ในไฟล์เดียวและมีการตรวจทานทุกเดือน</p>
+<p>ผลลัพธ์เป็นการประมาณเพื่อประกอบการวางแผนเท่านั้น ไม่ใช่คำปรึกษาด้านภาษี กฎหมาย หรือการลงทุน หากพบตัวเลขไม่ตรงกับประกาศทางการ แจ้งผ่านช่องทางด้านบนหรือหน้า GitHub ของโครงการ</p>
+<h2>อยากทำงานด้วย หรือลงโฆษณา</h2><p>ทักมาทาง Instagram หรืออีเมลได้ รายละเอียดการลงโฆษณาอยู่ที่ <a href="/advertise">หน้าลงโฆษณา</a></p></div></div>`,
+  scripts: true,
+  jsonld: [ld({ "@context": "https://schema.org", "@type": "ProfilePage", mainEntity: { "@type": "Person", name: CREATOR.handle, alternateName: CREATOR.handle, jobTitle: CREATOR.roles.join(", "), sameAs: [ig, yt] } }), crumbLD([["หน้าแรก", "/"], ["ผู้สร้าง", "/about"]])] });
+shell({ file: "advertise.html", p: "/advertise", title: "ลงโฆษณากับภาษีTH", desc: `ลงโฆษณาหรือเป็นสปอนเซอร์กับ${NAME} รูปแบบและเงื่อนไข`,
+  body: `${crumb("ลงโฆษณา")}<div class="wrap"><div class="prose"><h1>ลงโฆษณากับ${NAME}</h1>
+<p>${NAME}เป็นเว็บคำนวณการเงินที่คนเปิดใช้เพื่อตัดสินใจเรื่องเงิน เหมาะกับสินค้าและบริการที่เกี่ยวข้อง เช่น สินเชื่อ ประกัน กองทุน ซอฟต์แวร์บัญชี และบริการสำหรับฟรีแลนซ์</p>
+<h2>รูปแบบที่มี</h2>
+<ul><li><b>สปอนเซอร์ในหน้าเครื่องมือ</b> กล่องเล็กใต้ผลลัพธ์ของเครื่องมือที่เกี่ยวข้อง ติดป้าย “สนับสนุนโดย” ชัดเจน</li><li><b>สปอนเซอร์ในบทความ</b> ตำแหน่งเดียวกันในบทความที่ตรงหัวข้อ</li><li><b>เครื่องมือร่วมแบรนด์</b> สร้างเครื่องคิดเลขเฉพาะสำหรับสินค้าของคุณ ใช้ดีไซน์เดียวกับเว็บ</li></ul>
+<h2>เรื่องสถิติและราคา</h2><p>เว็บเพิ่งเปิดตัว จึงยังไม่มีสถิติผู้เข้าชมที่เชื่อถือได้ให้อ้างอิง เราจะไม่ระบุตัวเลขที่ยังไม่มีจริง ช่วงเปิดตัวตกลงราคาเป็นรายกรณี และจะแจ้งสถิติจริงจากระบบวัดผลให้เมื่อมี</p>
+<h2>หลักการที่ยึด</h2><ul><li>ป้ายสปอนเซอร์ชัดเจนเสมอ และลิงก์ติด <code>rel="sponsored"</code></li><li>โฆษณาไม่มีผลต่อสูตรหรือผลลัพธ์ที่คำนวณ</li><li>ไม่รับโฆษณาที่หลอกลวง เงินกู้นอกระบบ พนัน หรือสัญญาผลตอบแทนแน่นอน</li></ul>
+<h2>ติดต่อ</h2><p>อีเมล <b>${CREATOR.email}</b> หรือ Instagram <a href="${ig}" rel="noopener" target="_blank">@${CREATOR.ig}</a></p></div></div>` });
 shell({ file: "privacy.html", p: "/privacy", title: "นโยบายความเป็นส่วนตัว", desc: "นโยบายความเป็นส่วนตัวของเว็บไซต์", body: `${crumb("นโยบายความเป็นส่วนตัว")}<div class="wrap"><div class="prose"><h1>นโยบายความเป็นส่วนตัว</h1><p>เว็บนี้คำนวณในเบราว์เซอร์ของคุณ ข้อมูลที่กรอกไม่ถูกส่งไปเก็บที่เซิร์ฟเวอร์ ผู้ให้บริการโฮสติ้งอาจเก็บบันทึกการเข้าชมตามปกติ เช่น ที่อยู่ IP และหน้าที่เปิด เพื่อความปลอดภัยและสถิติการใช้งาน</p></div></div>` });
 fs.writeFileSync("404.html", `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ไม่พบหน้า | ${NAME}</title><meta name="robots" content="noindex"><link rel="stylesheet" href="${FONTS}"><link rel="stylesheet" href="/style.css?v=${VER}"></head><body><main class="wrap" style="padding-block:64px"><h1>ไม่พบหน้าที่ต้องการ</h1><p class="lede"><a href="/">กลับหน้าแรกเพื่อเลือกเครื่องมือ</a></p></main></body></html>`);
 

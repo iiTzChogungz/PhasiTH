@@ -11,6 +11,9 @@ for(const [name,vp] of [['mobile',{width:390,height:800}],['small',{width:320,he
   const key=await p.$$eval('.slip .key strong',e=>e.length),rows=await p.$$eval('.slip .r',e=>e.length);
   const ow=await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
   if(!(key===1||pg==='debt-payoff')||ow){errs.push(`BAD ${pg} key=${key} rows=${rows} overflow=${ow}`)}}
+ for(const pg of ['about','advertise']){await p.goto(B+'/'+pg);if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))errs.push('overflow '+pg)}
+ await p.goto(B+'/salary');const [dl]=await Promise.all([p.waitForEvent('download',{timeout:8000}).catch(()=>null),p.click('.save')]);
+ if(!dl)errs.push('no image download');else{const f=await dl.path();const sz=require('fs').statSync(f).size;if(sz<20000)errs.push('image too small '+sz);if(process.argv[2]&&name==='desktop')await dl.saveAs(process.argv[2]+'/share.png')}
  await p.goto(B+'/');await p.fill('#q','ภาษี');
  const vis=await p.$$eval('.toc-row[data-find]',e=>e.filter(x=>!x.hidden).length);if(vis<4)errs.push('search '+vis);
  await p.fill('#q','');

@@ -1,4 +1,4 @@
-# DESIGN.md — เครื่องมือเงินไทย
+# DESIGN.md — ภาษีTH
 
 Subject: free Thai personal-finance calculators. Audience: salaried and freelance Thais who search a concrete
 question ("เงินเดือน 30,000 รับสุทธิเท่าไร"). Job of every page: answer that question in one glance.

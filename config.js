@@ -9,7 +9,7 @@ window.CONFIG = {
   personalAllowance: 60000,
   expenseRate: 0.5, expenseCap: 100000,
   socialSecurity: { rate: 0.05, wageCap: 17500, monthlyMax: 875 }, // เพดาน 17,500 ช่วง 2569-2571 (ข่าว: ไทยรัฐ/ประชาชาติ) ยืนยันกับ sso.go.th
-  siteName: "เครื่องมือเงินไทย",
+  brand: { name: "ภาษีTH", by: "ck_warunyu", site: "phasith.vercel.app" },
   // ลิงก์ affiliate: ใส่ url หลังสมัครโปรแกรมแล้ว (เว้นว่าง = ไม่แสดง) pages = หน้าที่จะแสดง (ว่าง = ทุกหน้า)
   affiliates: [
     { title: "ปลดหนี้/รีไฟแนนซ์: เปรียบเทียบสินเชื่อ", desc: "ดูข้อเสนอสินเชื่อและบัตรจากพาร์ทเนอร์", url: "", pages: ["refinance.html","loan.html","debt-payoff.html","guide-refinance.html","guide-debt.html"] },
