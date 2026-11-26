@@ -45,3 +45,28 @@
   };
   C.withholding = (amt, ratePct) => ({ wh: amt * ratePct / 100, net: amt - amt * ratePct / 100 });
 })(typeof window !== "undefined" ? window : global);
+(function (g) {
+  const C = g.Calc;
+  C.refinance = (bal, oldRate, newRate, yearsLeft, fee) => {
+    const a = C.loan(bal, oldRate, yearsLeft), b = C.loan(bal, newRate, yearsLeft);
+    return { oldPay: a.pay, newPay: b.pay, saveMonth: a.pay - b.pay, saveTotal: a.total - b.total - fee };
+  };
+  C.taxSaved = (salaryMonthly, extraDeduct) => {
+    const a = C.annualTax(salaryMonthly, 0).tax, b = C.annualTax(salaryMonthly, extraDeduct).tax;
+    return { before: a, after: b, saved: a - b };
+  };
+  C.freelanceRate = (targetMonthly, billableHours, expensesMonthly, whPct) => {
+    const need = (targetMonthly + expensesMonthly) / (1 - whPct / 100);
+    return { perHour: need / billableHours, perMonth: need };
+  };
+  C.overtime = (monthly, hours, mult) => {
+    const hourly = monthly / 30 / 8;
+    return { hourly, pay: hourly * mult * hours };
+  };
+  C.debtMonths = (debt, ratePct, pay) => {
+    const r = ratePct / 100 / 12;
+    if (pay <= debt * r) return { months: Infinity, interest: Infinity };
+    const n = Math.log(pay / (pay - debt * r)) / Math.log(1 + r);
+    return { months: Math.ceil(n), interest: pay * Math.ceil(n) - debt };
+  };
+})(typeof window !== "undefined" ? window : global);
