@@ -2,13 +2,13 @@
 /* สร้างทั้งเว็บ:  node build.js [https://โดเมน]   (ผลลัพธ์เป็นไฟล์ .html ใน root, Vercel เสิร์ฟแบบ clean URL) */
 const fs = require("fs"), path = require("path");
 global.window = global;
-require("./config.js"); const Calc = require("./calc.js"); const { TOOLS, GROUPS, fmt: f, slipHTML } = require("./tools.js");
+require("./config.js"); const Calc = require("./calc.js"); const { SALARIES, TOOLS, GROUPS, fmt: f, slipHTML } = require("./tools.js");
 const CONTENT = require("./content.js"), GUIDES = require("./content/guides.json");
 const SITE = (process.argv[2] || process.env.SITE_URL || "https://phasith.vercel.app").replace(/\/$/, "");
 const CREATOR = require("./content/creator.json"), SPONSORS = require("./content/sponsors.json");
 const NAME = CONFIG.brand.name, TODAY = new Date().toISOString().slice(0, 10);
 const FONTS = "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Pridi:wght@600;700&display=swap";
-const SAL = [15000, 20000, 25000, 30000, 35000, 40000, 50000, 60000, 70000, 80000, 100000, 150000];
+const SAL = SALARIES;
 const crypto = require("crypto");
 const VER = crypto.createHash("md5").update(["style.css","app.js","tools.js","calc.js","config.js"].map((x) => fs.readFileSync(x)).join("")).digest("hex").slice(0, 8);
 const pages = []; // {file, path}
@@ -24,12 +24,14 @@ function shell({ file, p, title, desc, body, jsonld = [], scripts = false, bare 
   const html = `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(full)}</title><meta name="description" content="${esc(desc)}">${noindex ? '<meta name="robots" content="noindex">' : ""}
 <link rel="canonical" href="${SITE + p}"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta name="theme-color" content="#E9EEEB">
-<meta property="og:type" content="website"><meta property="og:locale" content="th_TH"><meta property="og:site_name" content="${NAME}"><meta property="og:title" content="${esc(full)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${SITE + p}">
+<meta property="og:type" content="website"><meta property="og:locale" content="th_TH"><meta property="og:site_name" content="${NAME}"><meta property="og:title" content="${esc(full)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${SITE + p}"><meta property="og:image" content="${SITE}/og/${file.replace(".html", "")}.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icons/icon-180.png">
 <meta name="google-site-verification" content="Or4ukEcD3GRHU0DjK7WAPo3XGqUdAftq1skqdrDpXdw">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${FONTS}"><link rel="stylesheet" href="/style.css?v=${VER}">
 ${jsonld.join("")}</head><body>
+<a class="skip" href="#main">ข้ามไปเนื้อหา</a>
 <header class="top"><div class="wrap"><a class="mark" href="/"><b aria-hidden="true">฿</b>${NAME}</a><nav aria-label="เมนูหลัก"><a href="/#tools">เครื่องมือ</a><a href="/#guides">บทความ</a><a href="/about">เกี่ยวกับ</a></nav></div></header>
-<main>${body}</main>
+<main id="main">${body}</main>
 <footer class="foot"><div class="wrap"><span>${NAME} · ใช้ฟรี คำนวณในเบราว์เซอร์ของคุณ ไม่เก็บข้อมูลที่กรอก</span><span>สร้างโดย <a href="/about" rel="author">${CREATOR.handle}</a> · <a href="/advertise">ลงโฆษณา</a> · <a href="/privacy">ความเป็นส่วนตัว</a></span></div></footer>
 ${scripts ? '<script src="/config.js?v=${VER}"></script><script src="/calc.js?v=${VER}"></script><script src="/tools.js?v=${VER}"></script><script src="/app.js?v=${VER}"></script>' : ""}
 </body></html>`;
@@ -43,9 +45,9 @@ function fieldHTML(fl) {
   return `<div class="f"><label for="f-${fl.id}">${fl.label}</label><div class="in"><input id="f-${fl.id}" name="${fl.id}" type="number" inputmode="decimal" min="0" step="${fl.step || "any"}" value="${fl.value}"><span class="u">${fl.unit}</span></div></div>`;
 }
 function bench(t, vals) {
-  const form = `<form class="blank" data-tool="${t.id}" aria-label="กรอกข้อมูล">${t.fields.map((x) => fieldHTML(vals ? { ...x, value: vals[x.id] ?? x.value } : x)).join("")}</form>`;
+  const form = `<form class="blank" data-tool="${t.id}"${vals ? " data-fixed" : ""} aria-label="กรอกข้อมูล">${t.fields.map((x) => fieldHTML(vals ? { ...x, value: vals[x.id] ?? x.value } : x)).join("")}</form>`;
   const v = vals ? { ...defaults(t), ...vals } : defaults(t);
-  const slip = `<div class="slipwrap"><section class="slip" data-slip="${t.id}" aria-live="polite" aria-label="ผลลัพธ์"><div class="slip-head"><span>สรุปผล</span><span>${NAME}</span></div><div class="slip-body">${slipHTML(t, t.compute(v))}</div><div class="slip-foot"><span>ประมาณการ ไม่ใช่คำปรึกษา</span><span class="acts"><button type="button" class="copy">คัดลอกผล</button><button type="button" class="save">บันทึกเป็นภาพ</button></span></div></section></div>`;
+  const slip = `<div class="slipwrap"><section class="slip" data-slip="${t.id}" aria-live="polite" aria-label="ผลลัพธ์"><div class="slip-head"><span>สรุปผล</span><span>${NAME}</span></div><div class="slip-body">${slipHTML(t, t.compute(v))}</div><div class="slip-foot"><span>ประมาณการ ไม่ใช่คำปรึกษา</span><span class="acts"><button type="button" class="pin">ปักหมุดเทียบ</button><button type="button" class="link">แชร์ลิงก์</button><button type="button" class="copy">คัดลอกผล</button><button type="button" class="save">บันทึกเป็นภาพ</button></span></div></section></div>`;
   return { form, slip };
 }
 const crumb = (cur) => `<nav class="crumb wrap" aria-label="เส้นทาง"><a href="/">หน้าแรก</a> › ${cur}</nav>`;
@@ -151,6 +153,20 @@ shell({ file: "advertise.html", p: "/advertise", title: "ลงโฆษณา�
 <h2>ติดต่อ</h2><p>อีเมล <b>${CREATOR.email}</b> หรือ Instagram <a href="${ig}" rel="noopener" target="_blank">@${CREATOR.ig}</a></p></div></div>` });
 shell({ file: "privacy.html", p: "/privacy", title: "นโยบายความเป็นส่วนตัว", desc: "นโยบายความเป็นส่วนตัวของเว็บไซต์", body: `${crumb("นโยบายความเป็นส่วนตัว")}<div class="wrap"><div class="prose"><h1>นโยบายความเป็นส่วนตัว</h1><p>เว็บนี้คำนวณในเบราว์เซอร์ของคุณ ข้อมูลที่กรอกไม่ถูกส่งไปเก็บที่เซิร์ฟเวอร์ ผู้ให้บริการโฮสติ้งอาจเก็บบันทึกการเข้าชมตามปกติ เช่น ที่อยู่ IP และหน้าที่เปิด เพื่อความปลอดภัยและสถิติการใช้งาน</p></div></div>` });
 fs.writeFileSync("404.html", `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ไม่พบหน้า | ${NAME}</title><meta name="robots" content="noindex"><link rel="stylesheet" href="${FONTS}"><link rel="stylesheet" href="/style.css?v=${VER}"></head><body><main class="wrap" style="padding-block:64px"><h1>ไม่พบหน้าที่ต้องการ</h1><p class="lede"><a href="/">กลับหน้าแรกเพื่อเลือกเครื่องมือ</a></p></main></body></html>`);
+
+// ---------- PWA, llms.txt
+fs.writeFileSync("manifest.webmanifest", JSON.stringify({ name: NAME, short_name: NAME, lang: "th", start_url: "/", scope: "/", display: "standalone", background_color: "#E9EEEB", theme_color: "#E9EEEB",
+  description: "เครื่องมือคำนวณภาษี เงินเดือนสุทธิ ค่างวด ฟรี", icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" }, { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" }, { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }] }, null, 1));
+fs.writeFileSync("sw.js", `/* network-first: ออนไลน์ได้ของใหม่เสมอ ออฟไลน์ใช้ของที่เคยเปิด */
+const V = "th-${VER}";
+self.addEventListener("install", (e) => { self.skipWaiting(); e.waitUntil(caches.open(V).then((c) => c.addAll(["/", "/style.css?v=${VER}", "/config.js?v=${VER}", "/calc.js?v=${VER}", "/tools.js?v=${VER}", "/app.js?v=${VER}"])).catch(() => {})); });
+self.addEventListener("activate", (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== V).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
+self.addEventListener("fetch", (e) => {
+  const r = e.request; if (r.method !== "GET" || new URL(r.url).origin !== location.origin) return;
+  e.respondWith(fetch(r).then((res) => { if (res.ok) { const c = res.clone(); caches.open(V).then((ch) => ch.put(r, c)); } return res; }).catch(() => caches.match(r).then((m) => m || caches.match("/"))));
+});
+`);
+fs.writeFileSync("llms.txt", `# ${NAME}\n\n> เครื่องมือคำนวณการเงินส่วนบุคคลสำหรับคนไทย ฟรี คำนวณในเบราว์เซอร์ ไม่เก็บข้อมูลที่กรอก สร้างโดย ${CREATOR.handle}\n\n## เครื่องมือ\n${TOOLS.map((t) => `- [${t.name}](${SITE}/${t.id}): ${t.desc}`).join("\n")}\n\n## บทความ\n${Object.entries(GUIDES).map(([k, v]) => `- [${v.title}](${SITE}/${k}): ${v.desc}`).join("\n")}\n\n## หมายเหตุ\nผลลัพธ์เป็นการประมาณ ไม่ใช่คำปรึกษาด้านภาษีหรือการเงิน ค่าตามกฎหมายอยู่ใน config.js\n`);
 
 // ---------- sitemap + robots
 fs.writeFileSync("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map((x) => `<url><loc>${SITE + (x.p === "/" ? "/" : x.p)}</loc><lastmod>${TODAY}</lastmod></url>`).join("\n")}\n</urlset>\n`);

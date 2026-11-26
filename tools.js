@@ -42,6 +42,22 @@
         return r;
       }, next: ["tax-saving", "salary", "withholding"] },
 
+    { id: "bonus", group: "ภาษี", name: "ภาษีโบนัส", short: "โบนัสสุทธิหลังภาษีที่เพิ่มขึ้น",
+      title: "คำนวณภาษีโบนัส ได้โบนัสสุทธิเท่าไร",
+      h1: "ได้โบนัส เสียภาษีเพิ่มเท่าไร",
+      desc: "ใส่เงินเดือนและโบนัส ดูภาษีที่เพิ่มขึ้นจากโบนัสและโบนัสสุทธิที่ได้จริง",
+      lede: "โบนัสถูกรวมเข้ากับเงินได้ทั้งปี จึงอาจดันให้ภาษีขึ้นไปอีกขั้น ใส่ตัวเลขเพื่อดูส่วนต่าง",
+      fields: [{ id: "salary", label: "เงินเดือนต่อเดือน", value: 50000, unit: "บาท" },
+               { id: "bonus", label: "โบนัสทั้งปี", value: 100000, unit: "บาท" }],
+      compute(v) {
+        const x = C().bonusTax(v.salary, v.bonus);
+        return { key: 3, note: "เป็นการประมาณจากการรวมโบนัสเข้าเงินได้ทั้งปี การหักจริงของนายจ้างอาจต่างออกไป",
+          rows: [{ l: "ภาษีทั้งปีก่อนมีโบนัส", v: f(x.base), u: "บาท" },
+                 { l: "ภาษีทั้งปีหลังมีโบนัส", v: f(x.tax), u: "บาท" },
+                 { l: "ภาษีที่เพิ่มจากโบนัส", v: f(x.extra), u: "บาท" },
+                 { l: "โบนัสสุทธิที่ได้จริง", v: f(x.bonusNet), u: "บาท" }] };
+      }, next: ["tax", "salary", "tax-saving"] },
+
     { id: "tax-saving", group: "ภาษี", name: "ลดหย่อนภาษีประหยัดได้เท่าไร", short: "ใส่ยอดลดหย่อน ดูภาษีที่ลดลง",
       title: "คำนวณภาษีที่ประหยัดได้จากค่าลดหย่อนเพิ่ม",
       h1: "ลดหย่อนเพิ่ม ประหยัดภาษีได้เท่าไร",
@@ -152,6 +168,24 @@
                  { l: "ผลตอบแทน", v: f(c.gain), u: "บาท" }] };
       }, next: ["tax-saving", "loan", "salary"] },
 
+    { id: "goal", group: "ออมเงิน", name: "เก็บเงินให้ถึงเป้าหมาย", short: "เงินดาวน์ รถ เที่ยว ใช้เวลากี่เดือน",
+      title: "คำนวณเวลาเก็บเงินให้ถึงเป้าหมาย",
+      h1: "เก็บเงินเดือนละเท่านี้ ถึงเป้าเมื่อไร",
+      desc: "คำนวณว่าต้องออมกี่เดือนจึงถึงเป้าหมาย เช่น เงินดาวน์บ้าน ดาวน์รถ หรือกองทุนฉุกเฉิน",
+      lede: "ใส่เป้าหมาย เงินที่มีแล้ว เงินออมต่อเดือน และผลตอบแทนที่คาด",
+      fields: [{ id: "target", label: "เป้าหมาย", value: 500000, unit: "บาท" },
+               { id: "cur", label: "มีอยู่แล้ว", value: 50000, unit: "บาท" },
+               { id: "m", label: "ออมต่อเดือน", value: 10000, unit: "บาท" },
+               { id: "i", label: "ผลตอบแทนต่อปี", value: 2, unit: "%", step: "0.1" }],
+      compute(v) {
+        const x = C().goalMonths(v.target, v.cur, v.m, v.i);
+        if (x.months === Infinity) return { key: -1, note: "ด้วยเงินออมนี้ไม่ถึงเป้าภายใน 100 ปี ลองเพิ่มเงินออมต่อเดือน", rows: [] };
+        return { key: 0, rows: [{ l: "ใช้เวลา", v: String(x.months), u: "เดือน" },
+                                { l: "คิดเป็น", v: (x.months / 12).toFixed(1), u: "ปี" },
+                                { l: "เงินที่ออมเอง", v: f(x.saved), u: "บาท" },
+                                { l: "ดอกเบี้ยที่ได้", v: f(x.gain), u: "บาท" }] };
+      }, next: ["savings", "loan", "salary"] },
+
     { id: "freelance-rate", group: "ทำงานและรายได้", name: "ราคาฟรีแลนซ์ต่อชั่วโมง", short: "ตั้งราคาให้ถึงรายได้เป้าหมาย",
       title: "คำนวณราคาฟรีแลนซ์ต่อชั่วโมง",
       h1: "ฟรีแลนซ์ควรตั้งราคาชั่วโมงละเท่าไร",
@@ -196,6 +230,7 @@
     const body = rows.length || key ? `<dl class="rows">${res.rows.map((r, i) => i === res.key ? "" : `<div class="r"><dt>${r.l}</dt><span class="lead" aria-hidden="true"></span><dd>${r.v}<small>${r.u}</small></dd></div>`).join("")}</dl>${key ? `<div class="key"><span>${key.l}</span><strong>${key.v}<small>${key.u}</small></strong></div>` : ""}` : "";
     return body + (res.note ? `<p class="note">${res.note}</p>` : "");
   }
-  g.TOOLS = TOOLS; g.GROUPS = GROUPS; g.fmt = f; g.readValues = readValues; g.slipHTML = slipHTML;
-  if (typeof module !== "undefined") module.exports = { TOOLS, GROUPS, fmt: f, slipHTML };
+  const SALARIES = [15000, 20000, 25000, 30000, 35000, 40000, 50000, 60000, 70000, 80000, 100000, 150000];
+  g.SALARIES = SALARIES; g.TOOLS = TOOLS; g.GROUPS = GROUPS; g.fmt = f; g.readValues = readValues; g.slipHTML = slipHTML;
+  if (typeof module !== "undefined") module.exports = { SALARIES, TOOLS, GROUPS, fmt: f, slipHTML };
 })(typeof window !== "undefined" ? window : global);

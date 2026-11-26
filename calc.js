@@ -70,3 +70,19 @@
     return { months: Math.ceil(n), interest: pay * Math.ceil(n) - debt };
   };
 })(typeof window !== "undefined" ? window : global);
+
+(function (g) {
+  const C = g.Calc;
+  C.bonusTax = (m, bonus) => {
+    const cf = g.CONFIG, base = C.annualTax(m, 0).tax, gross = m * 12 + bonus;
+    const expense = Math.min(gross * cf.expenseRate, cf.expenseCap), ss = C.socialSecurity(m) * 12;
+    const tax = C.incomeTax(Math.max(0, gross - expense - cf.personalAllowance - ss));
+    return { base, tax, extra: tax - base, bonusNet: bonus - (tax - base) };
+  };
+  C.goalMonths = (target, current, monthly, ratePct) => {
+    if (current >= target) return { months: 0, saved: current, gain: 0 };
+    const r = ratePct / 100 / 12; let b = current;
+    for (let n = 1; n <= 1200; n++) { b = (b + monthly) * (1 + r); if (b >= target) return { months: n, saved: current + monthly * n, gain: b - current - monthly * n }; }
+    return { months: Infinity, saved: 0, gain: 0 };
+  };
+})(typeof window !== "undefined" ? window : global);

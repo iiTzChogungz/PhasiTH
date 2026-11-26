@@ -4,7 +4,7 @@ const {chromium}=require('playwright');const B='http://localhost:8765';
 for(const [name,vp] of [['mobile',{width:390,height:800}],['small',{width:320,height:640}],['desktop',{width:1280,height:900}]]){
  const p=await b.newPage({viewport:vp});const errs=[];
  p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>m.type()==='error'&&!/fonts|net::|ERR_/.test(m.text())&&errs.push(m.text()));
- const tools=['salary','tax','tax-saving','withholding','vat','loan','refinance','debt-payoff','savings','freelance-rate','overtime'];
+ const tools=['salary','tax','tax-saving','withholding','vat','loan','refinance','debt-payoff','savings','freelance-rate','overtime','bonus','goal'];
  for(const pg of [...tools,'take-home-30000','take-home-15000']){
   await p.goto(B+'/'+pg);
   const inp=await p.$('.in input');await inp.fill('50000');await p.waitForTimeout(120);
@@ -14,8 +14,13 @@ for(const [name,vp] of [['mobile',{width:390,height:800}],['small',{width:320,he
  for(const pg of ['about','advertise']){await p.goto(B+'/'+pg);if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))errs.push('overflow '+pg)}
  await p.goto(B+'/salary');const [dl]=await Promise.all([p.waitForEvent('download',{timeout:8000}).catch(()=>null),p.click('.save')]);
  if(!dl)errs.push('no image download');else{const f=await dl.path();const sz=require('fs').statSync(f).size;if(sz<20000)errs.push('image too small '+sz);if(process.argv[2]&&name==='desktop')await dl.saveAs(process.argv[2]+'/share.png')}
+ // จำค่า + ลิงก์แชร์ + ปักหมุด
+ await p.goto(B+'/tax');await p.fill('#f-salary','77000');await p.reload();if(await p.inputValue('#f-salary')!=='77000')errs.push('remember failed');
+ await p.goto(B+'/tax?salary=45000&other=10000');if(await p.inputValue('#f-salary')!=='45000'||await p.inputValue('#f-other')!=='10000')errs.push('url params failed');
+ await p.click('.pin');await p.fill('#f-salary','60000');if(!(await p.textContent('.cmp')).includes('+'))errs.push('compare failed');
+ await p.evaluate(()=>localStorage.clear());
  await p.goto(B+'/');await p.fill('#q','ภาษี');
- const vis=await p.$$eval('.toc-row[data-find]',e=>e.filter(x=>!x.hidden).length);if(vis<4)errs.push('search '+vis);
+ const vis=await p.$$eval('.toc-row[data-find]',e=>e.filter(x=>!x.hidden).length);if(vis<5)errs.push('search '+vis);
  await p.fill('#q','');
  if(process.argv[2]){await p.goto(B+'/');await p.waitForTimeout(1100);await p.screenshot({path:process.argv[2]+`/home-${name}.png`,fullPage:true});
   await p.goto(B+'/tax');await p.screenshot({path:process.argv[2]+`/tax-${name}.png`,fullPage:true});}

@@ -1,21 +1,53 @@
-/* คำนวณสดเมื่อพิมพ์ + คัดลอกผลลัพธ์ */
+/* คำนวณสดเมื่อพิมพ์ + จำค่า + ลิงก์แชร์ + ปักหมุดเปรียบเทียบ + คัดลอก */
 (function () {
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; }
+  function num(s) { return parseFloat(String(s).replace(/,/g, "")); }
   document.querySelectorAll("form[data-tool]").forEach(function (form) {
     var tool = TOOLS.filter(function (t) { return t.id === form.dataset.tool; })[0];
     var slip = document.querySelector('[data-slip="' + tool.id + '"]');
     if (!tool || !slip) return;
-    var out = slip.querySelector(".slip-body");
+    var out = slip.querySelector(".slip-body"), fixed = form.hasAttribute("data-fixed"), pinned = null;
+    var key = "th:" + tool.id;
+    function setField(id, val) {
+      var el = form.querySelector("#f-" + id); if (!el) return;
+      if (el.type === "checkbox") el.checked = val === "1" || val === true || val === "true"; else if (val !== "" && !isNaN(parseFloat(val))) el.value = val;
+    }
+    function collect() { var o = {}; tool.fields.forEach(function (f) { var el = form.querySelector("#f-" + f.id); o[f.id] = el.type === "checkbox" ? (el.checked ? "1" : "0") : el.value; }); return o; }
+    if (!fixed) {
+      var qs = new URLSearchParams(location.search), fromUrl = false;
+      tool.fields.forEach(function (f) { if (qs.has(f.id)) { setField(f.id, qs.get(f.id)); fromUrl = true; } });
+      if (!fromUrl) { var saved = store(key); if (saved) { try { var o = JSON.parse(saved); Object.keys(o).forEach(function (k) { setField(k, o[k]); }); } catch (e) {} } }
+    }
+    function shareURL() { var p = new URLSearchParams(collect()); return location.origin + location.pathname + "?" + p.toString(); }
     function run() {
       var res = tool.compute(readValues(tool, form));
-      out.innerHTML = slipHTML(tool, res);
+      var extra = "";
+      if (pinned !== null && res.key >= 0 && res.rows[res.key]) {
+        var d = num(res.rows[res.key].v) - pinned.val;
+        extra = '<p class="cmp">เทียบกับที่ปักหมุดไว้ (' + pinned.label + " " + pinned.shown + "): <b>" + (d > 0 ? "+" : d < 0 ? "−" : "") + fmt(Math.abs(d)) + "</b> " + res.rows[res.key].u + "</p>";
+      }
+      out.innerHTML = slipHTML(tool, res) + extra;
       slip.dataset.text = tool.name + "\n" + res.rows.map(function (r) { return r.l + ": " + r.v + " " + r.u; }).join("\n");
+      if (!fixed) { store(key, JSON.stringify(collect())); try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+      return res;
     }
     form.addEventListener("input", run);
     form.addEventListener("submit", function (e) { e.preventDefault(); });
+    function flash(btn, msg, orig) { btn.textContent = msg; setTimeout(function () { btn.textContent = orig; }, 1600); }
     var copy = slip.querySelector(".copy");
-    if (copy) copy.addEventListener("click", function () {
-      var done = function () { copy.textContent = "คัดลอกแล้ว"; setTimeout(function () { copy.textContent = "คัดลอกผล"; }, 1600); };
-      try { navigator.clipboard.writeText(slip.dataset.text + "\nคำนวณที่ phasith.vercel.app").then(done, function () {}); } catch (e) {}
+    if (copy) copy.addEventListener("click", function () { try { navigator.clipboard.writeText(slip.dataset.text + "\nคำนวณที่ " + CONFIG.brand.site).then(function () { flash(copy, "คัดลอกแล้ว", "คัดลอกผล"); }, function () {}); } catch (e) {} });
+    var lnk = slip.querySelector(".link");
+    if (lnk) lnk.addEventListener("click", function () {
+      var url = shareURL();
+      if (navigator.share) { navigator.share({ title: tool.name + " | " + CONFIG.brand.name, url: url }).catch(function () {}); return; }
+      try { navigator.clipboard.writeText(url).then(function () { flash(lnk, "คัดลอกลิงก์แล้ว", "แชร์ลิงก์"); }, function () {}); } catch (e) {}
+    });
+    var pin = slip.querySelector(".pin");
+    if (pin) pin.addEventListener("click", function () {
+      if (pinned !== null) { pinned = null; pin.textContent = "ปักหมุดเทียบ"; run(); return; }
+      var res = tool.compute(readValues(tool, form));
+      if (res.key < 0 || !res.rows[res.key]) return;
+      pinned = { val: num(res.rows[res.key].v), shown: res.rows[res.key].v, label: res.rows[res.key].l }; pin.textContent = "ยกเลิกหมุด"; run();
     });
     run();
   });
@@ -98,3 +130,5 @@ document.querySelectorAll(".copy[data-copy]").forEach(function (b) {
     });
   });
 })();
+
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("/sw.js").catch(function () {});

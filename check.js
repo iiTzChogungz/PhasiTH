@@ -14,6 +14,11 @@ for(const f of pages){const h=fs.readFileSync(f,"utf8");
  for(const m of h.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)){try{JSON.parse(m[1])}catch(e){ok(0,f+" JSON-LD invalid")}}
  if(f!=="404.html"){ok(/<title>.+<\/title>/.test(h),f+" title");ok(/rel="canonical"/.test(h),f+" canonical");ok(/<h1[ >]/.test(h),f+" h1");ok((h.match(/<h1[ >]/g)||[]).length===1,f+" one h1");}
  if(/^take-home-/.test(f)){const text=h.replace(/<[^>]+>/g," ");ok(text.length>2500,f+" thin");ok(/ประมาณ [\d,.]+ บาท/.test(text),f+" answer");}}
+// ไฟล์ประกอบ
+for(const f of pages.filter(x=>x!=="404.html"))ok(fs.existsSync("og/"+f.replace(".html",".png")),"og image "+f);
+const man=JSON.parse(fs.readFileSync("manifest.webmanifest","utf8"));for(const i of man.icons)ok(fs.existsSync("."+i.src),"icon "+i.src);
+ok(fs.existsSync("sw.js")&&fs.existsSync("llms.txt"),"sw/llms");
+ok(!pages.some(f=>/เครื่องมือเงินไทย/.test(fs.readFileSync(f,"utf8"))),"old brand name remains");
 // ซ้ำกัน: หน้าเงินเดือนต้องไม่เหมือนกัน
 const sal=pages.filter(f=>/^take-home-/.test(f)).map(f=>fs.readFileSync(f,"utf8").match(/<meta name="description" content="(.*?)"/)[1]);
 ok(new Set(sal).size===sal.length,"duplicate descriptions");
